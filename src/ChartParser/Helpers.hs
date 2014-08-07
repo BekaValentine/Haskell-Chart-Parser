@@ -6,7 +6,7 @@ import ChartParser
 
 
 
--- General helpers
+-- * General helpers
 
 unaryRule :: (ChartItem a -> Maybe (ChartItem a)) -> Rule a
 unaryRule f = Rule 1 $ \xs ->
@@ -28,7 +28,7 @@ ternaryRule f = Rule 3 $ \xs ->
 
 
 
--- Helpers for CFGs
+-- * Helpers for CFGs
 
 data Tree c = Word String | Phrase c [Tree c]
 
@@ -42,9 +42,21 @@ cat (Phrase c _) = Just c
 
 data CFGItem c = Terminal String | Nonterminal c
 
+-- | Abbreviation for Terminal
 tm = Terminal
+
+-- | Abbreviation for Nonterminal
 ntm = Nonterminal
 
+{-|
+  Define a rule using a CFG production rule.
+  For example, the BNF rule
+  > <email> ::= <name> "@" <domain>
+  would be translated as
+  > Email ==> [ Nonterminal Name , Terminal "@" , Nonterminal Domain ]
+  or using the abbreviations
+  > Email ==> [ ntm Name , tm "@" , ntm Domain ]
+-}
 (==>) :: Eq c => c -> [CFGItem c] -> Rule (Tree c)
 m ==> ds = Rule (length ds) $ \is ->
              do ts <- matchCats ds is
