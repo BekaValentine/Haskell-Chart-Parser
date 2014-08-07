@@ -2,9 +2,6 @@ module Example where
 
 import Text.Read
 
-import ChartParser
-import Helpers
-
 
 
 -- * Parse an ambiguous mathematical expression to a number
