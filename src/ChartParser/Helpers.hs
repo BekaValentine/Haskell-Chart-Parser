@@ -8,44 +8,53 @@ import ChartParser
 
 -- General helpers
 
-unaryRule :: (a -> Maybe a) -> Rule a
+unaryRule :: (ChartItem a -> Maybe (ChartItem a)) -> Rule a
 unaryRule f = Rule 1 $ \xs ->
                 case xs of
                   [x] -> f x
                   _   -> Nothing
 
-binaryRule :: (a -> a -> Maybe a) -> Rule a
+binaryRule :: (ChartItem a -> ChartItem a -> Maybe (ChartItem a)) -> Rule a
 binaryRule f = Rule 2 $ \xs ->
                  case xs of
                    [l,r] -> f l r
                    _     -> Nothing
 
-ternaryRule :: (a -> a -> a -> Maybe a) -> Rule a
-ternaryRule f = Rule 2 $ \xs ->
+ternaryRule :: (ChartItem a -> ChartItem a -> ChartItem a -> Maybe (ChartItem a)) -> Rule a
+ternaryRule f = Rule 3 $ \xs ->
                  case xs of
                    [l,m,r] -> f l m r
                    _       -> Nothing
-
-type Lexicon a = String -> [a]
-
-lexer :: Lexicon a -> [String] -> [[a]]
-lexer l = map l
 
 
 
 -- Helpers for CFGs
 
-data Tree c = Word c String | Phrase c [Tree c]
+data Tree c = Word String | Phrase c [Tree c]
 
 instance Show c => Show (Tree c) where
-  show (Word c s)    = "[" ++ show c ++ " " ++ s ++ "]"
+  show (Word s)      = s
   show (Phrase c ds) = "[" ++ show c ++ " " ++ unwords (map show ds) ++ "]"
 
-cat :: Tree c -> c
-cat (Word c _)   = c
-cat (Phrase c _) = c
+cat :: Tree c -> Maybe c
+cat (Word _)     = Nothing
+cat (Phrase c _) = Just c
 
-(==>) :: Eq c => c -> [c] -> Rule (Tree c)
-m ==> ds = Rule (length ds) $ \ts ->
-             do guard $ ds == map cat ts
-                return $ Phrase m ts
+data CFGItem c = Terminal String | Nonterminal c
+
+tm = Terminal
+ntm = Nonterminal
+
+(==>) :: Eq c => c -> [CFGItem c] -> Rule (Tree c)
+m ==> ds = Rule (length ds) $ \is ->
+             do ts <- matchCats ds is
+                return $ Item (Phrase m ts)
+  where matchCats :: Eq c => [CFGItem c] -> [ChartItem (Tree c)] -> Maybe [Tree c]
+        matchCats [] [] = Just []
+        matchCats (Terminal s:cs) (Token s':is)
+          | s == s' = do ts <- matchCats cs is
+                         return $ Word s:ts
+        matchCats (Nonterminal c:cs) (Item t:is)
+          | Just c == cat t = do ts <- matchCats cs is
+                                 return $ t:ts
+        matchCats _ _ = Nothing
