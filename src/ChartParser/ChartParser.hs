@@ -57,11 +57,12 @@ saturateList x f = unfoldr (\y -> do y' <- f y ; return (y,y'))
 
 -- | Repeatedly applies a grammar to the chart until no new edges are added.
 saturateChart :: Grammar a -> Chart a -> Chart a
-saturateChart g ch = Chart $ concatMap edges
-                                       (saturateList
-                                          ch
-                                          (\ch' -> do guard $ not (null (edges ch'))
-                                                      return $ applyGrammar g ch'))
+saturateChart g ch = Chart $ nub $ concatMap
+                                     edges
+                                     (saturateList
+                                        ch
+                                        (\ch' -> do guard $ not (null (edges ch'))
+                                                    return $ applyGrammar g ch'))
 
 data ParseState a = ParseState { unread :: [String] , chart :: Chart a }
   deriving Show
